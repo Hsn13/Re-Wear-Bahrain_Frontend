@@ -10,6 +10,7 @@ import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
 import NewItem from './pages/NewItem';
 import AboutUs from './pages/AboutUs';
+import EditItem from './pages/EditItem';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -36,6 +37,7 @@ function App() {
           <Route path="/browse" element={<Browse />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/items/new" element={user ? <NewItem /> : <Navigate to="/sign-in" />} />
+          <Route path="/items/:id/edit" element={user ? <EditItem /> : <Navigate to="/sign-in" />} />
           <Route path="/items/:id" element={<ItemDetail user={user} />} />
           <Route path="/sign-up" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
           <Route path="/sign-in" element={!user ? <SignIn setUser={setUser} /> : <Navigate to="/dashboard" />} />

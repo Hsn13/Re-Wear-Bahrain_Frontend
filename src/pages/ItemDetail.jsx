@@ -123,7 +123,12 @@ function ItemDetail({ user }) {
       {isOwner && (
         <div className="owner-actions">
           <span className="owner-label">This is your listing</span>
-          <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete Listing</button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {item.status === 'available' && (
+              <Link className="btn btn-ghost btn-sm" to={`/items/${id}/edit`}>Edit</Link>
+            )}
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+          </div>
         </div>
       )}
     </div>

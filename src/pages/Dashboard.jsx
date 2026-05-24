@@ -101,19 +101,28 @@ function Dashboard({ user }) {
         ) : (
           <div className="items-grid items-grid-sm">
             {items.map(item => (
-              <Link key={item._id} to={`/items/${item._id}`} className="item-card item-card-sm">
-                {item.images?.[0]
-                  ? <img src={item.images[0]} alt={item.title} className="item-card-img" />
-                  : <div className="item-card-placeholder"><span>👗</span></div>
-                }
-                <div className="item-card-body">
-                  <p className="item-card-title">{item.title}</p>
-                  <p className="item-card-meta">
-                    <span className={`item-status-dot item-status-${item.status}`} />
-                    {item.status}
-                  </p>
-                </div>
-              </Link>
+              <div key={item._id} className="item-card item-card-sm" style={{ display: 'flex', flexDirection: 'column' }}>
+                <Link to={`/items/${item._id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
+                  {item.images?.[0]
+                    ? <img src={item.images[0]} alt={item.title} className="item-card-img" />
+                    : <div className="item-card-placeholder"><span>👗</span></div>
+                  }
+                  <div className="item-card-body">
+                    <p className="item-card-title">{item.title}</p>
+                    <p className="item-card-meta">
+                      <span className={`item-status-dot item-status-${item.status}`} />
+                      {item.status}
+                    </p>
+                  </div>
+                </Link>
+                {item.status === 'available' && (
+                  <div className="item-card-actions">
+                    <Link to={`/items/${item._id}/edit`} className="btn btn-ghost btn-sm" style={{ flex: 1 }}>
+                      Edit
+                    </Link>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

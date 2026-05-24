@@ -550,6 +550,12 @@ a:hover { color: var(--green-500); }
   justify-content: space-between;
   font-size: 0.78rem;
 }
+.item-card-actions {
+  padding: 0.5rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.4rem;
+}
 .item-card-location { color: var(--text-muted); }
 .item-card-credits  {
   background: var(--green-50);
