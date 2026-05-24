@@ -1251,3 +1251,452 @@ a:hover { color: var(--green-500); }
   .stats-strip { flex-direction: column; align-items: center; }
   .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); width: 100%; }
 }
+
+/* ── Back button ── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-bottom: 1.25rem;
+}
+.back-btn:hover {
+  background: var(--neutral-100);
+  color: var(--text);
+  border-color: var(--neutral-400);
+}
+
+/* ── Map ── */
+.item-map-wrapper { margin: 1.5rem 0; }
+.item-map-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+/* ── Swap card – enhanced ── */
+.swap-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.swap-card-from {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+.swap-card-inactive {
+  opacity: 0.68;
+  background: var(--neutral-50);
+}
+
+.swap-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.swap-status-requested {
+  background: var(--sand-50);
+  color: var(--sand-700);
+  border: 1px solid var(--sand-300);
+}
+.swap-status-approved {
+  background: var(--teal-100);
+  color: var(--teal-600);
+  border: 1px solid var(--teal-500);
+}
+.swap-status-completed {
+  background: var(--green-50);
+  color: var(--green-700);
+  border: 1px solid var(--green-100);
+}
+.swap-status-cancelled {
+  background: var(--neutral-100);
+  color: var(--neutral-500);
+  border: 1px solid var(--neutral-200);
+}
+
+/* ── Swap message bubbles ── */
+.swap-bubble {
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+.swap-bubble-requester {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-left: 3px solid var(--neutral-400);
+}
+.swap-bubble-owner {
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  border-left: 3px solid var(--green-500);
+}
+.swap-bubble-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.swap-bubble-text { color: var(--text); line-height: 1.55; }
+
+/* ── Swap inline forms (reply / decline) ── */
+.swap-inline-form {
+  background: var(--neutral-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+.swap-inline-form-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ── Swap notices ── */
+.swap-decline-notice {
+  background: var(--error-bg);
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--error);
+  margin-top: 0.5rem;
+}
+.swap-cancel-notice {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.swap-decline-reason {
+  font-style: italic;
+  margin-top: 0.25rem;
+  color: var(--error);
+}
+.swap-refund-note {
+  margin-top: 0.4rem;
+  color: var(--green-700);
+  font-weight: 500;
+}
+.swap-waiting-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.swap-approved-note {
+  font-size: 0.82rem;
+  color: var(--green-700);
+  font-weight: 500;
+}
+.section-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: -0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+/* ── Photo upload ── */
+.photo-upload-wrapper { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.photo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 2rem 1rem;
+  text-align: center;
+  background: var(--neutral-50);
+  transition: border-color 0.2s, background 0.2s;
+  cursor: default;
+}
+.photo-upload-area.photo-upload-loading {
+  border-style: solid;
+  border-color: var(--green-300);
+  background: var(--green-50);
+}
+.photo-upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.photo-upload-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-heading);
+  margin-bottom: 0.85rem;
+}
+.photo-upload-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.65rem;
+}
+
+.photo-upload-btns {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.photo-src-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.photo-src-btn:hover {
+  border-color: var(--green-500);
+  background: var(--green-50);
+  color: var(--green-700);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-upload-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--green-100);
+  border-top-color: var(--green-500);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.photo-preview-wrapper {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.photo-preview {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  display: block;
+  background: var(--neutral-50);
+}
+.photo-preview-overlay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+}
+.photo-change-btn { background: rgba(255,255,255,0.92) !important; }
+
+/* ── Camera modal ── */
+.camera-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.camera-modal {
+  background: var(--neutral-900);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.camera-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.camera-modal-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: white;
+}
+.camera-close-btn {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.camera-close-btn:hover { background: rgba(255,255,255,0.22); }
+
+.camera-viewfinder {
+  position: relative;
+  background: #000;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+}
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.camera-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+  background: #000;
+}
+.camera-error {
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 2rem;
+  background: var(--neutral-900);
+}
+.camera-snap-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid rgba(255,255,255,0.3);
+  font-size: 1.6rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, opacity 0.15s;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+}
+.camera-snap-btn:hover:not(:disabled) { transform: scale(1.06); }
+.camera-snap-btn:active:not(:disabled) { transform: scale(0.94); }
+.camera-snap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.camera-flip-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.camera-flip-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.pagination-info {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-btn:hover:not(:disabled) {
+  background: var(--green-50);
+  border-color: var(--green-300);
+  color: var(--green-700);
+}
+.page-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.page-btn-active {
+  background: var(--green-700) !important;
+  border-color: var(--green-700) !important;
+  color: white !important;
+  font-weight: 700;
+}
+.page-btn-nav { padding: 0 0.85rem; }
+.page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  user-select: none;
+}

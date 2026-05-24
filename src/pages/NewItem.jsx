@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import api from '../services/api'
+import BackButton from '../components/BackButton'
+import PhotoUpload from '../components/PhotoUpload'
 
 const CATEGORIES = ['tops', 'bottoms', 'dresses', 'outerwear', 'footwear', 'accessories', 'kids', 'other']
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size', 'Kids']
@@ -47,9 +49,7 @@ function NewItem() {
   }
 
   function validateAll() {
-    const fields = ['title', 'ecoCreditsPrice']
-    if (formData.imageUrl) fields.push('imageUrl')
-    return fields.map(validateField).every(Boolean)
+    return ['title', 'ecoCreditsPrice'].map(validateField).every(Boolean)
   }
 
   async function handleSubmit(e) {
@@ -77,6 +77,7 @@ function NewItem() {
 
   return (
     <div className="page-container-sm form-page">
+      <BackButton fallback="/dashboard" />
       <h1>List an Item</h1>
       <p className="form-subtitle">
         Give it away and earn <strong>30 Eco-Credits</strong> when someone picks it up!
@@ -150,18 +151,11 @@ function NewItem() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="imageUrl">Photo URL</label>
-            <input
-              className={`form-input${errors.imageUrl ? ' form-input-error' : ''}`}
-              id="imageUrl" name="imageUrl" type="url"
-              value={formData.imageUrl} onChange={handleChange}
-              onBlur={() => validateField('imageUrl')}
-              placeholder="https://…"
+            <label className="form-label">Photo</label>
+            <PhotoUpload
+              value={formData.imageUrl}
+              onChange={url => setFormData(prev => ({ ...prev, imageUrl: url }))}
             />
-            {errors.imageUrl
-              ? <span className="field-error">{errors.imageUrl}</span>
-              : <span className="form-hint">Paste a direct image link (Cloudinary, Imgur, etc.)</span>
-            }
           </div>
 
           {serverError && <p className="error-msg" role="alert">{serverError}</p>}

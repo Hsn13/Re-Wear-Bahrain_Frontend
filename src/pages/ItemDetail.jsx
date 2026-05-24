@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router'
 import api from '../services/api'
+import Map from '../components/Map'
+import BackButton from '../components/BackButton'
 
 const CONDITION_LABEL = { 'new': 'New', 'like-new': 'Like New', 'good': 'Good', 'fair': 'Fair' }
 
@@ -50,19 +52,20 @@ function ItemDetail({ user }) {
   if (error && !item) return <p className="error-msg" style={{ margin: '2rem auto', maxWidth: 600 }}>{error}</p>
   if (!item) return null
 
-  const isOwner  = user && item.owner._id === user._id
+  const isOwner    = user && item.owner._id === user._id
   const canRequest = user && !isOwner && item.status === 'available'
   const statusClass = `item-status-badge status-${item.status}`
 
   return (
     <div className="page-container item-detail">
+      <BackButton fallback="/browse" />
+
       {item.images?.[0] && (
         <img src={item.images[0]} alt={item.title} className="item-detail-img" />
       )}
 
       <div className="item-detail-header">
         <h1>{item.title}</h1>
-
         <div className="item-pills">
           <span className="pill pill-neutral">{item.category}</span>
           {item.size && <span className="pill pill-neutral">Size {item.size}</span>}
@@ -84,27 +87,40 @@ function ItemDetail({ user }) {
 
       <span className={statusClass}>{item.status}</span>
 
+      {/* Map showing approximate pickup area */}
+      <Map
+        coordinates={item.location?.coordinates}
+        label={item.location?.neighborhood}
+      />
+
       {error && <p className="error-msg">{error}</p>}
 
       {requestSuccess && (
         <p className="success-msg">
-          Request sent! The owner will approve a pickup time. Check your <Link to="/dashboard">Dashboard</Link>.
+          Request sent! The owner will see your message and respond.{' '}
+          Check your <Link to="/dashboard">Dashboard</Link> for updates.
         </p>
       )}
 
       {canRequest && !requestSuccess && (
         <div className="request-form">
           <h3>Request this item</h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Your message will be visible to the owner so they can coordinate pickup with you.
+          </p>
           <form onSubmit={handleRequest}>
             <div className="form-group">
-              <label className="form-label" htmlFor="pickupNotes">Message to owner</label>
+              <label className="form-label" htmlFor="pickupNotes">
+                Message to owner
+              </label>
               <textarea
                 className="form-textarea"
                 id="pickupNotes"
                 rows={3}
                 value={pickupNotes}
                 onChange={e => setPickupNotes(e.target.value)}
-                placeholder="e.g. I'm free on weekends near Juffair…"
+                placeholder="e.g. I'm free on weekends and can meet near Juffair…"
+                maxLength={500}
               />
             </div>
             <button className="btn btn-primary" type="submit" disabled={requesting}>

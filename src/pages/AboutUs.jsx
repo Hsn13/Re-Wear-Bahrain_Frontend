@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import Logo from '../components/Logo'
+import BackButton from '../components/BackButton'
 
 function useScrollReveal() {
   useEffect(() => {
@@ -18,6 +19,9 @@ export default function AboutUs() {
 
   return (
     <>
+      <div style={{ padding: '1rem 1.5rem 0' }}>
+        <BackButton fallback="/" />
+      </div>
       {/* ── Hero ── */}
       <section className="about-hero">
         <div className="hero-animate" style={{ marginBottom: '1.5rem' }}>

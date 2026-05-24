@@ -28,6 +28,10 @@ function App() {
     }
   }, []);
 
+  function handleUserUpdate(updates) {
+    setUser(prev => ({ ...prev, ...updates }))
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar user={user} setUser={setUser} />
@@ -41,7 +45,7 @@ function App() {
           <Route path="/items/:id" element={<ItemDetail user={user} />} />
           <Route path="/sign-up" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
           <Route path="/sign-in" element={!user ? <SignIn setUser={setUser} /> : <Navigate to="/dashboard" />} />
-          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/sign-in" />} />
+          <Route path="/dashboard" element={user ? <Dashboard user={user} onUserUpdate={handleUserUpdate} /> : <Navigate to="/sign-in" />} />
         </Routes>
       </main>
       <Footer />

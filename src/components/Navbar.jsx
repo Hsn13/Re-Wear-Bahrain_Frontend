@@ -13,6 +13,9 @@ function Navbar({ user, setUser }) {
         <Logo iconSize={30} textSize="sm" />
       </Link>
 
+      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/" end>
+        Home
+      </NavLink>
       <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/browse">
         Browse
       </NavLink>
