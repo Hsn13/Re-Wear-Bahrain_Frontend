@@ -64,7 +64,7 @@ function Dashboard({ user }) {
         <div className="profile-avatar">{initial}</div>
         <div className="profile-info">
           <p className="profile-username">{profile.username}</p>
-          <p className="profile-location">📍 {profile.location?.neighborhood}</p>
+          <p className="profile-location">📍 {profile.location?.customNeighborhood || profile.location?.neighborhood}</p>
           <div className="profile-stats">
             <span className="stat-chip credits">
               🌿 <strong>{profile.ecoCredits}</strong> Eco-Credits

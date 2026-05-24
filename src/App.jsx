@@ -4,10 +4,12 @@ import Homepage from './pages/Homepage';
 import SignUp from './pages/Signup';
 import SignIn from './pages/SignIn';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
 import NewItem from './pages/NewItem';
+import AboutUs from './pages/AboutUs';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -26,19 +28,21 @@ function App() {
   }, []);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar user={user} setUser={setUser} />
-      <div style={{ padding: '1.5rem' }}>
+      <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/browse" element={<Browse />} />
-          <Route path="/items/new" element={user ? <NewItem /> : <Navigate to='/sign-in' />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/items/new" element={user ? <NewItem /> : <Navigate to="/sign-in" />} />
           <Route path="/items/:id" element={<ItemDetail user={user} />} />
-          <Route path="/sign-up" element={!user ? <SignUp /> : <Navigate to='/dashboard' />} />
-          <Route path="/sign-in" element={!user ? <SignIn setUser={setUser} /> : <Navigate to='/dashboard' />} />
-          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to='/sign-in' />} />
+          <Route path="/sign-up" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
+          <Route path="/sign-in" element={!user ? <SignIn setUser={setUser} /> : <Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/sign-in" />} />
         </Routes>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }

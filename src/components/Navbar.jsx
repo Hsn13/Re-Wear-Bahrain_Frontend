@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, NavLink } from 'react-router'
 import Logo from './Logo'
 
 function Navbar({ user, setUser }) {
@@ -13,7 +13,12 @@ function Navbar({ user, setUser }) {
         <Logo iconSize={30} textSize="sm" />
       </Link>
 
-      <Link className="navbar-link" to="/browse">Browse</Link>
+      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/browse">
+        Browse
+      </NavLink>
+      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/about">
+        About
+      </NavLink>
 
       <div className="navbar-spacer" />
 
@@ -29,7 +34,7 @@ function Navbar({ user, setUser }) {
       ) : (
         <>
           <Link className="navbar-link" to="/sign-up">Sign up</Link>
-          <Link className="navbar-link" to="/sign-in">Sign in</Link>
+          <Link className="btn btn-primary btn-sm" to="/sign-in">Sign in</Link>
         </>
       )}
     </nav>
