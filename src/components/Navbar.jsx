@@ -1,46 +1,59 @@
 import { Link, NavLink } from 'react-router'
 import Logo from './Logo'
+import { useTranslation } from '../i18n'
 
 function Navbar({ user, setUser }) {
+  const { t, language, setLanguage } = useTranslation()
+
   function logOut() {
     localStorage.removeItem('token')
     setUser(null)
   }
 
   return (
-    <nav className="navbar">
-      <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-        <Logo iconSize={30} textSize="sm" />
-      </Link>
-
-      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/" end>
-        Home
-      </NavLink>
-      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/browse">
-        Browse
-      </NavLink>
-      <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/about">
-        About
-      </NavLink>
-
-      <div className="navbar-spacer" />
-
-      {user ? (
-        <>
-          <Link className="navbar-link list-link" to="/items/new">+ List Item</Link>
-          <Link className="navbar-link" to="/dashboard">Dashboard</Link>
-          <div className="navbar-divider" />
-          <span className="eco-badge">🌿 {user.ecoCredits ?? '—'}</span>
-          <span className="navbar-user">{user.username}</span>
-          <button className="btn btn-ghost btn-sm" onClick={logOut}>Log Out</button>
-        </>
-      ) : (
-        <>
-          <Link className="navbar-link" to="/sign-up">Sign up</Link>
-          <Link className="btn btn-primary btn-sm" to="/sign-in">Sign in</Link>
-        </>
-      )}
-    </nav>
+    <header className="site-header">
+      <nav className="navbar" aria-label={t('nav.main')}>
+        <Link to="/" className="navbar-brand-link" aria-label={t('nav.home')}>
+          <Logo iconSize={32} textSize="sm" />
+        </Link>
+        <div className="navbar-main-links">
+          <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/browse">
+            {t('nav.browse')}
+          </NavLink>
+          <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/guidelines">
+            {t('nav.guidelines')}
+          </NavLink>
+          <NavLink className={({ isActive }) => `navbar-link${isActive ? ' navbar-link-active' : ''}`} to="/about">
+            {t('nav.about')}
+          </NavLink>
+        </div>
+        <div className="navbar-actions">
+          <button
+            type="button"
+            className="language-toggle"
+            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            aria-label={t('language.switchLabel')}
+          >
+            {t('language.switch')}
+          </button>
+          {user ? (
+            <>
+              <span className="eco-badge" aria-label={`${user.ecoCredits ?? 0} Eco-Credits`}>
+                ◈ {user.ecoCredits ?? 0}
+              </span>
+              <Link className="navbar-link navbar-account" to="/dashboard">{t('nav.dashboard')}</Link>
+              <Link className="btn btn-primary btn-sm" to="/items/new">{t('nav.list')}</Link>
+              <button className="btn btn-ghost btn-sm navbar-logout" onClick={logOut}>{t('nav.logout')}</button>
+            </>
+          ) : (
+            <>
+              <Link className="navbar-link navbar-account" to="/sign-in">{t('nav.signin')}</Link>
+              <Link className="btn btn-primary btn-sm" to="/sign-up">{t('nav.signup')}</Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
   )
 }
 

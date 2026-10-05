@@ -1,464 +1,443 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import api from '../services/api'
+import AccountVerification from '../components/AccountVerification'
+import { useTranslation } from '../i18n'
+import { localizedNeighborhood } from '../constants/neighborhoods'
 
-const BADGE_EMOJI = {
-  'Eco Starter':         '🌱',
-  'Green Giver':         '🌿',
-  'Sustainability Hero': '🌍',
-  'Bahrain Eco Champion':'🏆',
-}
+function SwapCard({ swap, user, refresh }) {
+  const { t, language } = useTranslation()
+  const [messages, setMessages] = useState(swap.messages || [])
+  const [messageText, setMessageText] = useState('')
+  const [handoverCode, setHandoverCode] = useState('')
+  const [enteredCode, setEnteredCode] = useState('')
+  const [disputeReason, setDisputeReason] = useState('')
+  const [showDispute, setShowDispute] = useState(false)
+  const [review, setReview] = useState(null)
+  const [reviewLoading, setReviewLoading] = useState(true)
+  const [rating, setRating] = useState(5)
+  const [reviewText, setReviewText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
-const STATUS_LABEL = {
-  requested: 'Pending approval',
-  approved:  'Approved — arrange pickup',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
+  const isOwner = String(swap.owner?._id) === String(user._id)
+  const active = ['requested', 'approved', 'disputed'].includes(swap.status)
+  const conversationOpen = !['completed', 'cancelled'].includes(swap.status)
+  const item = swap.item
+  const otherUser = isOwner ? swap.requester : swap.owner
 
-function SwapBubble({ label, text, variant }) {
-  if (!text) return null
-  return (
-    <div className={`swap-bubble swap-bubble-${variant}`}>
-      <span className="swap-bubble-label">{label}</span>
-      <p className="swap-bubble-text">{text}</p>
-    </div>
-  )
-}
-
-function IncomingSwapCard({ swap, onAction, onRefresh, busy }) {
-  const [replyOpen, setReplyOpen]       = useState(false)
-  const [replyText, setReplyText]       = useState('')
-  const [declineOpen, setDeclineOpen]   = useState(false)
-  const [declineReason, setDeclineReason] = useState('')
-  const [localBusy, setLocalBusy]       = useState(false)
-
-  async function submitReply(e) {
-    e.preventDefault()
-    if (!replyText.trim()) return
-    setLocalBusy(true)
+  const loadMessages = useCallback(async () => {
     try {
-      await api.patch(`/swaps/${swap._id}/respond`, { response: replyText.trim() })
-      setReplyText('')
-      setReplyOpen(false)
-      onRefresh()
-    } catch (err) {
-      alert(err.response?.data?.err || 'Could not send reply')
-    } finally {
-      setLocalBusy(false)
+      const response = await api.get(`/swaps/${swap._id}/messages`)
+      setMessages(response.data.messages)
+    } catch {
+      setError(t('swap.messageLoadError'))
     }
-  }
-
-  async function submitDecline(e) {
-    e.preventDefault()
-    setLocalBusy(true)
-    try {
-      await api.patch(`/swaps/${swap._id}/cancel`, { reason: declineReason.trim() })
-      setDeclineOpen(false)
-      onRefresh()
-    } catch (err) {
-      alert(err.response?.data?.err || 'Could not decline')
-    } finally {
-      setLocalBusy(false)
-    }
-  }
-
-  const isActive = ['requested', 'approved'].includes(swap.status)
-
-  return (
-    <div className={`swap-card${isActive ? '' : ' swap-card-inactive'}`}>
-      <div className="swap-card-header">
-        <div>
-          <p className="swap-card-title">
-            <strong>{swap.requester?.username}</strong> wants{' '}
-            <Link to={`/items/${swap.item?._id}`}><strong>{swap.item?.title}</strong></Link>
-          </p>
-          <p className="swap-card-from">
-            📍 {swap.requester?.location?.neighborhood}
-          </p>
-        </div>
-        <span className={`swap-status-badge swap-status-${swap.status}`}>
-          {STATUS_LABEL[swap.status]}
-        </span>
-      </div>
-
-      <SwapBubble
-        label={`${swap.requester?.username} says:`}
-        text={swap.pickupDetails?.notes}
-        variant="requester"
-      />
-      <SwapBubble
-        label="Your reply:"
-        text={swap.ownerResponse}
-        variant="owner"
-      />
-
-      {isActive && (
-        <div className="swap-actions" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-          {swap.status === 'requested' && !declineOpen && !replyOpen && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button className="btn btn-success btn-sm"
-                onClick={() => onAction('approve', swap._id)} disabled={busy || localBusy}>
-                Approve
-              </button>
-              <button className="btn btn-danger btn-sm"
-                onClick={() => setDeclineOpen(true)} disabled={busy || localBusy}>
-                Decline
-              </button>
-              <button className="btn btn-ghost btn-sm"
-                onClick={() => setReplyOpen(true)} disabled={busy || localBusy}>
-                {swap.ownerResponse ? 'Edit Reply' : 'Reply'}
-              </button>
-            </div>
-          )}
-
-          {swap.status === 'approved' && !replyOpen && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button className="btn btn-primary btn-sm"
-                onClick={() => onAction('complete', swap._id)} disabled={busy || localBusy}>
-                ✓ Mark as Picked Up (+{swap.creditsEarnedByOwner} credits)
-              </button>
-              <button className="btn btn-ghost btn-sm"
-                onClick={() => setReplyOpen(true)} disabled={busy || localBusy}>
-                {swap.ownerResponse ? 'Edit Message' : 'Send Message'}
-              </button>
-            </div>
-          )}
-
-          {declineOpen && (
-            <form className="swap-inline-form" onSubmit={submitDecline}>
-              <p className="swap-inline-form-title">Reason for declining (optional):</p>
-              <textarea
-                className="form-textarea"
-                rows={2}
-                placeholder="e.g. Already given to someone else…"
-                value={declineReason}
-                onChange={e => setDeclineReason(e.target.value)}
-                maxLength={300}
-              />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn btn-danger btn-sm" type="submit" disabled={localBusy}>
-                  {localBusy ? 'Declining…' : 'Confirm Decline'}
-                </button>
-                <button className="btn btn-ghost btn-sm" type="button"
-                  onClick={() => setDeclineOpen(false)} disabled={localBusy}>
-                  Back
-                </button>
-              </div>
-            </form>
-          )}
-
-          {replyOpen && (
-            <form className="swap-inline-form" onSubmit={submitReply}>
-              <p className="swap-inline-form-title">
-                {swap.status === 'approved'
-                  ? 'Coordinate pickup details:'
-                  : 'Reply to requester:'}
-              </p>
-              <textarea
-                className="form-textarea"
-                rows={2}
-                placeholder={
-                  swap.status === 'approved'
-                    ? 'e.g. Meet me at Seef Mall entrance Saturday 5pm…'
-                    : 'Write a message…'
-                }
-                value={replyText}
-                onChange={e => setReplyText(e.target.value)}
-                maxLength={500}
-                required
-              />
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn btn-primary btn-sm" type="submit" disabled={localBusy}>
-                  {localBusy ? 'Sending…' : 'Send'}
-                </button>
-                <button className="btn btn-ghost btn-sm" type="button"
-                  onClick={() => setReplyOpen(false)} disabled={localBusy}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function OutgoingSwapCard({ swap, onAction, busy }) {
-  const isActive = ['requested', 'approved'].includes(swap.status)
-
-  return (
-    <div className={`swap-card${isActive ? '' : ' swap-card-inactive'}`}>
-      <div className="swap-card-header">
-        <div>
-          <p className="swap-card-title">
-            <Link to={`/items/${swap.item?._id}`}><strong>{swap.item?.title}</strong></Link>
-            {' '}from <strong>{swap.owner?.username}</strong>
-          </p>
-          <p className="swap-card-from">
-            📍 {swap.owner?.location?.neighborhood}
-          </p>
-        </div>
-        <span className={`swap-status-badge swap-status-${swap.status}`}>
-          {STATUS_LABEL[swap.status]}
-        </span>
-      </div>
-
-      <SwapBubble
-        label="Your message:"
-        text={swap.pickupDetails?.notes}
-        variant="requester"
-      />
-      <SwapBubble
-        label={`${swap.owner?.username} replied:`}
-        text={swap.ownerResponse}
-        variant="owner"
-      />
-
-      {swap.status === 'cancelled' && swap.cancelledBy === 'owner' && (
-        <div className="swap-decline-notice">
-          <strong>Request declined by {swap.owner?.username}</strong>
-          {swap.cancelReason && (
-            <p className="swap-decline-reason">"{swap.cancelReason}"</p>
-          )}
-          <p className="swap-refund-note">
-            🌿 Your {swap.creditsSpentByRequester} Eco-Credits have been refunded.
-          </p>
-        </div>
-      )}
-
-      {swap.status === 'cancelled' && swap.cancelledBy === 'requester' && (
-        <div className="swap-cancel-notice">
-          <p>You cancelled this request.</p>
-          <p className="swap-refund-note">
-            🌿 Your {swap.creditsSpentByRequester} Eco-Credits have been refunded.
-          </p>
-        </div>
-      )}
-
-      {isActive && (
-        <div className="swap-actions" style={{ marginTop: '0.75rem' }}>
-          {swap.status === 'requested' && (
-            <p className="swap-waiting-note">
-              ⏳ Waiting for {swap.owner?.username} to respond…
-            </p>
-          )}
-          {swap.status === 'approved' && (
-            <p className="swap-approved-note">
-              ✅ Approved! Coordinate pickup with {swap.owner?.username}.
-            </p>
-          )}
-          <button className="btn btn-danger btn-sm"
-            onClick={() => onAction('cancel', swap._id)} disabled={busy}>
-            Cancel Request
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Dashboard({ user, onUserUpdate }) {
-  const [profile, setProfile] = useState(null)
-  const [items, setItems]     = useState([])
-  const [swaps, setSwaps]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [busy, setBusy]       = useState(false)
-
-  async function refreshData() {
-    const [profileRes, swapsRes] = await Promise.all([
-      api.get('/users/me/profile'),
-      api.get('/swaps/mine'),
-    ])
-    setProfile(profileRes.data.user)
-    setItems(profileRes.data.items)
-    setSwaps(swapsRes.data.swaps)
-    return profileRes.data.user
-  }
+  }, [swap._id, t])
 
   useEffect(() => {
-    refreshData().catch(console.error).finally(() => setLoading(false))
-  }, [])
+    loadMessages()
+    if (!conversationOpen) return undefined
+    const timer = window.setInterval(loadMessages, 7000)
+    return () => window.clearInterval(timer)
+  }, [conversationOpen, loadMessages])
 
-  async function handleSwapAction(action, swapId) {
+  useEffect(() => {
+    if (swap.status !== 'completed') {
+      setReviewLoading(false)
+      return
+    }
+    api.get(`/swaps/${swap._id}/reviews`)
+      .then(response => setReview(response.data))
+      .catch(() => setError(t('swap.reviewLoadError')))
+      .finally(() => setReviewLoading(false))
+  }, [swap._id, swap.status, t])
+
+  async function runAction(action, body = {}) {
+    setError('')
     setBusy(true)
     try {
-      const res = await api.patch(`/swaps/${swapId}/${action}`)
-      const freshProfile = await refreshData()
-      if (action === 'complete' && onUserUpdate) {
-        const credits = res.data.newEcoCredits ?? freshProfile.ecoCredits
-        onUserUpdate({ ecoCredits: credits })
-      }
+      const response = await api[action.method](action.path, body)
+      if (response.data.handoverCode) setHandoverCode(response.data.handoverCode)
+      await refresh()
+      return response.data
     } catch (err) {
-      alert(err.response?.data?.err || 'Action failed')
+      setError(err.response?.data?.err || t('auth.error'))
+      return null
     } finally {
       setBusy(false)
     }
   }
 
-  if (loading) return <p className="dashboard-loading">Loading your profile…</p>
-  if (!profile) return <p className="dashboard-loading">Could not load profile.</p>
+  async function sendMessage(event) {
+    event.preventDefault()
+    if (!messageText.trim()) return
+    const response = await runAction({ method: 'post', path: `/swaps/${swap._id}/messages` }, { text: messageText.trim() })
+    if (response?.message) {
+      setMessages(previous => [...previous, response.message])
+      setMessageText('')
+    }
+  }
 
-  const incoming = swaps.filter(s => s.owner._id === user._id && ['requested', 'approved'].includes(s.status))
-  const outgoing = swaps.filter(s => s.requester._id === user._id && ['requested', 'approved'].includes(s.status))
-  const history  = swaps.filter(s => ['completed', 'cancelled'].includes(s.status))
-  const initial  = profile.username?.[0]?.toUpperCase() ?? '?'
+  async function confirmHandover(event) {
+    event.preventDefault()
+    const response = await runAction(
+      { method: 'post', path: `/swaps/${swap._id}/confirm-handover` },
+      { code: enteredCode }
+    )
+    if (response) setEnteredCode('')
+  }
+
+  async function reportProblem(event) {
+    event.preventDefault()
+    const response = await runAction(
+      { method: 'post', path: `/swaps/${swap._id}/dispute` },
+      { reason: disputeReason }
+    )
+    if (response) setShowDispute(false)
+  }
+
+  async function submitReview(event) {
+    event.preventDefault()
+    const response = await runAction(
+      { method: 'post', path: `/swaps/${swap._id}/reviews` },
+      { rating, comment: reviewText }
+    )
+    if (response) setReview(response)
+  }
+
+  const dateLocale = language === 'ar' ? 'ar-BH' : 'en-BH'
 
   return (
-    <div className="page-container">
-
-      {/* ── Profile Card ── */}
-      <div className="profile-card">
-        <div className="profile-avatar">{initial}</div>
-        <div className="profile-info">
-          <p className="profile-username">{profile.username}</p>
-          <p className="profile-location">
-            📍 {profile.location?.customNeighborhood || profile.location?.neighborhood}
-          </p>
-          <div className="profile-stats">
-            <span className="stat-chip credits">
-              🌿 <strong>{profile.ecoCredits}</strong> Eco-Credits
-            </span>
-            <span className="stat-chip">
-              🎁 <strong>{profile.itemsGivenCount}</strong> items given
-            </span>
-          </div>
-          {profile.badges.length > 0 && (
-            <div className="badge-list">
-              {profile.badges.map(b => (
-                <span key={b} className="badge-chip">{BADGE_EMOJI[b]} {b}</span>
-              ))}
-            </div>
-          )}
-        </div>
+    <article className={`swap-card swap-card-${swap.status}`}>
+      <header className="swap-card-header">
         <div>
-          <Link to="/items/new" className="btn btn-primary btn-sm">+ List an Item</Link>
+          <Link to={`/items/${item?._id}`} className="swap-card-title">{item?.title || t('swap.deletedItem')}</Link>
+          <p className="swap-card-from">
+            {isOwner ? t('swap.requestFrom', { name: otherUser?.username || '' })
+              : t('swap.requestTo', { name: otherUser?.username || '' })}
+          </p>
+          <time className="swap-card-time" dateTime={swap.createdAt}>
+            {new Date(swap.createdAt).toLocaleDateString(dateLocale)}
+          </time>
         </div>
-      </div>
+        <span className={`swap-status-badge swap-status-${swap.status}`}>{t(`swap.${swap.status}`)}</span>
+      </header>
 
-      {/* ── My Listings ── */}
-      <div className="dashboard-section">
-        <p className="section-title">
-          My Listings <span className="section-count">{items.length}</span>
-        </p>
-        {items.length === 0 ? (
-          <div className="no-items-msg">
-            No listings yet. <Link to="/items/new">List your first item!</Link>
-          </div>
-        ) : (
-          <div className="items-grid items-grid-sm">
-            {items.map(item => (
-              <div key={item._id} className="item-card item-card-sm"
-                style={{ display: 'flex', flexDirection: 'column' }}>
-                <Link to={`/items/${item._id}`}
-                  style={{ textDecoration: 'none', color: 'inherit', flex: 1 }}>
-                  {item.images?.[0]
-                    ? <img src={item.images[0]} alt={item.title} className="item-card-img" />
-                    : <div className="item-card-placeholder"><span>👗</span></div>
-                  }
-                  <div className="item-card-body">
-                    <p className="item-card-title">{item.title}</p>
-                    <p className="item-card-meta">
-                      <span className={`item-status-dot item-status-${item.status}`} />
-                      {item.status}
-                    </p>
-                  </div>
-                </Link>
-                {item.status === 'available' && (
-                  <div className="item-card-actions">
-                    <Link to={`/items/${item._id}/edit`} className="btn btn-ghost btn-sm"
-                      style={{ flex: 1 }}>
-                      Edit
-                    </Link>
-                  </div>
-                )}
-              </div>
+      {swap.status === 'disputed' && (
+        <div className="swap-dispute-notice">
+          <strong>{t('swap.disputeNotice')}</strong>
+          {swap.disputeReason && <p>{swap.disputeReason}</p>}
+        </div>
+      )}
+
+      {swap.status === 'approved' && item?.pickupLocation && (
+        <section className="approved-pickup">
+          <h3>{t('swap.pickupDetails')}</h3>
+          <p><strong>{item.pickupLocation.address}</strong></p>
+          {item.pickupLocation.instructions && <p>{item.pickupLocation.instructions}</p>}
+          <p className="form-hint">{t('swap.pickupPrivate')}</p>
+        </section>
+      )}
+
+      {swap.status === 'approved' && (
+        <section className="handover-panel">
+          <h3>{t('swap.handoverTitle')}</h3>
+          {isOwner ? (
+            <>
+              <p>{t('swap.handoverOwner')}</p>
+              {handoverCode
+                ? <output className="handover-code" dir="ltr">{handoverCode}</output>
+                : <button className="btn btn-secondary btn-sm" type="button"
+                    onClick={() => runAction({ method: 'post', path: `/swaps/${swap._id}/refresh-handover-code` })} disabled={busy}>
+                    {t('swap.refreshCode')}
+                  </button>}
+              {!swap.requesterConfirmedAt && <p className="form-hint">{t('swap.waitRequester')}</p>}
+              <button className="btn btn-primary btn-sm" type="button"
+                onClick={() => runAction({ method: 'post', path: `/swaps/${swap._id}/confirm-owner` })}
+                disabled={busy || Boolean(swap.ownerConfirmedAt) || !swap.requesterConfirmedAt}>
+                {swap.ownerConfirmedAt ? t('swap.confirmedByYou') : t('swap.confirmGiven')}
+              </button>
+            </>
+          ) : (
+            <>
+              <p>{t('swap.handoverRequester')}</p>
+              <form className="handover-code-form" onSubmit={confirmHandover}>
+                <input className="form-input" dir="ltr" inputMode="numeric" autoComplete="one-time-code"
+                  maxLength={8} pattern="[0-9]{8}" aria-label={t('swap.code')}
+                  placeholder={t('swap.code')} value={enteredCode}
+                  onChange={event => setEnteredCode(event.target.value.replace(/\D/g, ''))} required />
+                <button className="btn btn-primary" type="submit" disabled={busy || enteredCode.length !== 8 || Boolean(swap.requesterConfirmedAt)}>
+                  {swap.requesterConfirmedAt ? t('swap.confirmedByYou') : t('swap.confirmReceived')}
+                </button>
+              </form>
+            </>
+          )}
+          {isOwner && swap.requesterConfirmedAt && <p className="form-hint">{t('swap.confirmedByOther')}</p>}
+          {!isOwner && swap.ownerConfirmedAt && <p className="form-hint">{t('swap.confirmedByOther')}</p>}
+        </section>
+      )}
+
+      {conversationOpen && (
+        <section className="conversation-panel">
+          <h3>{t('swap.conversation')}</h3>
+          <div className="message-list" aria-live="polite">
+            {messages.map((message, index) => (
+              <article className={`conversation-message${String(message.sender?._id || message.sender) === String(user._id) ? ' message-mine' : ''}`}
+                key={message._id || `${message.createdAt}-${index}`}>
+                <span>{String(message.sender?._id || message.sender) === String(user._id) ? t('swap.you') : otherUser?.username}</span>
+                <p>{message.text}</p>
+                <time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}</time>
+              </article>
             ))}
           </div>
-        )}
-      </div>
+          <form className="message-compose" onSubmit={sendMessage}>
+            <textarea className="form-textarea" rows={2} maxLength={1000} value={messageText}
+              onChange={event => setMessageText(event.target.value)} placeholder={t('swap.messagePlaceholder')} required />
+            <button className="btn btn-primary btn-sm" type="submit" disabled={busy || !messageText.trim()}>{t('swap.send')}</button>
+          </form>
+        </section>
+      )}
 
-      {/* ── Incoming Swap Requests ── */}
-      {incoming.length > 0 && (
-        <div className="dashboard-section">
-          <p className="section-title">
-            Requests on My Items <span className="section-count">{incoming.length}</span>
-          </p>
-          <p className="section-hint">
-            Review messages from requesters, reply, then approve or decline.
-          </p>
-          {incoming.map(swap => (
-            <IncomingSwapCard
-              key={swap._id}
-              swap={swap}
-              onAction={handleSwapAction}
-              onRefresh={refreshData}
-              busy={busy}
-            />
+      {active && swap.status !== 'disputed' && (
+        <div className="swap-actions">
+          {isOwner && swap.status === 'requested' && (
+            <>
+              <button className="btn btn-primary btn-sm" onClick={() => runAction({ method: 'patch', path: `/swaps/${swap._id}/approve` })} disabled={busy}>
+                {t('swap.approve')}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => runAction({ method: 'post', path: `/swaps/${swap._id}/cancel` })} disabled={busy}>
+                {t('swap.decline')}
+              </button>
+            </>
+          )}
+          {!isOwner && swap.status === 'requested' && (
+            <button className="btn btn-ghost btn-sm" onClick={() => runAction({ method: 'post', path: `/swaps/${swap._id}/cancel` })} disabled={busy}>
+              {t('swap.cancel')}
+            </button>
+          )}
+          {swap.status === 'approved' && (
+            <button className="btn btn-danger btn-sm" type="button" onClick={() => setShowDispute(previous => !previous)}>
+              {t('swap.dispute')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {showDispute && (
+        <form className="swap-inline-form" onSubmit={reportProblem}>
+          <label className="form-label" htmlFor={`dispute-${swap._id}`}>{t('swap.disputeReason')}</label>
+          <textarea id={`dispute-${swap._id}`} className="form-textarea" minLength={10} maxLength={1000}
+            value={disputeReason} onChange={event => setDisputeReason(event.target.value)} required />
+          <button className="btn btn-danger btn-sm" type="submit" disabled={busy || disputeReason.trim().length < 10}>
+            {t('swap.submitDispute')}
+          </button>
+        </form>
+      )}
+
+      {swap.status === 'completed' && review && !reviewLoading && !review.myReview && (
+        <form className="review-form" onSubmit={submitReview}>
+          <h3>{t('swap.reviewTitle')}</h3>
+          <p className="form-hint">{t('swap.reviewHint')}</p>
+          <label className="form-label" htmlFor={`rating-${swap._id}`}>{t('swap.rating')}</label>
+          <select id={`rating-${swap._id}`} className="form-select" value={rating}
+            onChange={event => setRating(Number(event.target.value))}>
+            {[5, 4, 3, 2, 1].map(value => <option key={value} value={value}>{value} / 5</option>)}
+          </select>
+          <textarea className="form-textarea" rows={2} maxLength={500} value={reviewText}
+            onChange={event => setReviewText(event.target.value)} placeholder={t('swap.reviewText')} />
+          <button className="btn btn-secondary btn-sm" type="submit" disabled={busy}>{t('swap.submitReview')}</button>
+        </form>
+      )}
+      {review?.pendingMutualReview && review.myReview && <p className="form-hint">{t('swap.reviewPending')}</p>}
+      {review?.reviews?.length === 2 && (
+        <div className="mutual-reviews">
+          {review.reviews.map(entry => (
+            <p key={entry._id}>★ {entry.rating}/5 · {entry.comment || t('swap.noReviewNote')}</p>
           ))}
         </div>
       )}
 
-      {/* ── Outgoing Swap Requests ── */}
-      {outgoing.length > 0 && (
-        <div className="dashboard-section">
-          <p className="section-title">
-            Items I've Requested <span className="section-count">{outgoing.length}</span>
-          </p>
-          {outgoing.map(swap => (
-            <OutgoingSwapCard
-              key={swap._id}
-              swap={swap}
-              onAction={handleSwapAction}
-              busy={busy}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ── Swap History ── */}
-      {history.length > 0 && (
-        <div className="dashboard-section">
-          <p className="section-title">
-            Swap History <span className="section-count">{history.length}</span>
-          </p>
-          {history.map(swap => {
-            const isOwner = swap.owner._id === user._id
-            return (
-              <div key={swap._id} className="swap-card swap-card-inactive">
-                <div className="swap-card-header">
-                  <p className="swap-card-title">
-                    {isOwner ? (
-                      <>
-                        <strong>{swap.requester?.username}</strong>
-                        {' — '}
-                        <Link to={`/items/${swap.item?._id}`}>{swap.item?.title}</Link>
-                      </>
-                    ) : (
-                      <>
-                        <Link to={`/items/${swap.item?._id}`}>{swap.item?.title}</Link>
-                        {' from '}
-                        <strong>{swap.owner?.username}</strong>
-                      </>
-                    )}
-                  </p>
-                  <span className={`swap-status-badge swap-status-${swap.status}`}>
-                    {STATUS_LABEL[swap.status]}
-                  </span>
-                </div>
-                {swap.status === 'cancelled' && swap.cancelledBy === 'owner' && !isOwner && swap.cancelReason && (
-                  <p className="swap-decline-reason" style={{ marginTop: '0.5rem' }}>
-                    "{swap.cancelReason}"
-                  </p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
+      {error && <p className="error-msg" role="alert">{error}</p>}
+    </article>
   )
 }
 
-export default Dashboard
+function ModeratorDisputes() {
+  const { t } = useTranslation()
+  const [disputes, setDisputes] = useState([])
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const refresh = useCallback(() => api.get('/swaps/moderation/disputes')
+    .then(response => setDisputes(response.data.swaps))
+    .catch(err => setError(err.response?.data?.err || t('auth.error'))), [t])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  async function resolve(id, action) {
+    const note = window.prompt(t('moderation.resolutionNote'))
+    if (!note || note.trim().length < 10) return
+    setBusy(true)
+    setError('')
+    try {
+      await api.post(`/swaps/moderation/disputes/${id}/resolve`, { action, note })
+      await refresh()
+    } catch (err) {
+      setError(err.response?.data?.err || t('auth.error'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="dashboard-section moderation-section">
+      <h2>{t('moderation.title')}</h2>
+      {disputes.length === 0 && <p className="form-hint">{t('moderation.empty')}</p>}
+      {disputes.map(swap => (
+        <article className="swap-card" key={swap._id}>
+          <h3>{swap.item?.title}</h3>
+          <p>{swap.disputeReason}</p>
+          <div className="swap-actions">
+            <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => resolve(swap._id, 'refund')}>
+              {t('moderation.refund')}
+            </button>
+            <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => resolve(swap._id, 'complete')}>
+              {t('moderation.complete')}
+            </button>
+          </div>
+        </article>
+      ))}
+      {error && <p className="error-msg" role="alert">{error}</p>}
+    </section>
+  )
+}
+
+export default function Dashboard({ user, onUserUpdate }) {
+  const { t, language } = useTranslation()
+  const [profile, setProfile] = useState(null)
+  const [items, setItems] = useState([])
+  const [swaps, setSwaps] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const loadData = useCallback(async () => {
+    const [profileResponse, swapsResponse] = await Promise.all([
+      api.get('/users/me/profile'),
+      api.get('/swaps/mine')
+    ])
+    return {
+      ...profileResponse.data,
+      swaps: swapsResponse.data.swaps
+    }
+  }, [])
+
+  const refreshData = useCallback(async () => {
+    const data = await loadData()
+    setProfile({ ...data.user, isModerator: data.isModerator })
+    setItems(data.items)
+    setSwaps(data.swaps)
+    return data
+  }, [loadData])
+
+  useEffect(() => {
+    let active = true
+    loadData()
+      .then(data => {
+        if (!active) return
+        setProfile({ ...data.user, isModerator: data.isModerator })
+        setItems(data.items)
+        setSwaps(data.swaps)
+      })
+      .catch(err => setError(err.response?.data?.err || t('dashboard.loadError')))
+      .finally(() => setLoading(false))
+    return () => { active = false }
+  }, [loadData, t])
+
+  const updateUser = async updates => {
+    onUserUpdate?.(updates)
+    await refreshData()
+  }
+
+  if (loading) return <p className="loading-msg page-feedback">{t('status.loading')}</p>
+  if (error && !profile) return <p className="error-msg page-feedback" role="alert">{error}</p>
+  if (!profile) return null
+
+  const activeSwaps = swaps.filter(swap => ['requested', 'approved', 'disputed'].includes(swap.status))
+  const pastSwaps = swaps.filter(swap => ['completed', 'cancelled'].includes(swap.status))
+  const area = localizedNeighborhood(profile.location?.customNeighborhood || profile.location?.neighborhood, language)
+
+  return (
+    <main className="page-container dashboard-page">
+      <header className="dashboard-heading">
+        <div>
+          <span className="section-eyebrow">{t('dashboard.title')}</span>
+          <h1>{t('dashboard.hello', { name: profile.username })}</h1>
+          <p>{area}</p>
+        </div>
+        <Link to="/items/new" className="btn btn-primary">{t('nav.list')}</Link>
+      </header>
+
+      <AccountVerification user={profile} onUserUpdate={updateUser} />
+
+      <section className="profile-card">
+        <div className="profile-stat">
+          <span className="profile-stat-label">{t('dashboard.credits')}</span>
+          <strong>◈ {profile.ecoCredits}</strong>
+        </div>
+        <div className="profile-stat">
+          <span className="profile-stat-label">{t('dashboard.given')}</span>
+          <strong>{profile.itemsGivenCount}</strong>
+        </div>
+        <div className="badge-list">
+          {(profile.badges || []).map(badge => <span className="badge-chip" key={badge}>{badge}</span>)}
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section-heading">
+          <h2>{t('dashboard.listings')}</h2><span className="section-count">{items.length}</span>
+        </div>
+        {items.length ? (
+          <div className="items-grid items-grid-sm">
+            {items.map(item => (
+              <article className="item-card item-card-sm" key={item._id}>
+                <Link to={`/items/${item._id}`} className="dashboard-item-link">
+                  {item.images?.[0] ? <img src={item.images[0]} alt={item.title} className="item-card-img" loading="lazy" />
+                    : <div className="item-card-placeholder">◌</div>}
+                  <div className="item-card-body">
+                    <p className="item-card-title">{item.title}</p>
+                    <p className="item-card-meta">{t(`item.status.${item.status}`)}</p>
+                  </div>
+                </Link>
+                {item.status === 'available' && !item.isDemo && (
+                  <div className="item-card-actions">
+                    <Link to={`/items/${item._id}/edit`} className="btn btn-ghost btn-sm">{t('item.edit')}</Link>
+                  </div>
+                )}
+                {(item.isDemo || item.owner?.isDemo) && <span className="demo-listing-badge">{t('browse.demo')}</span>}
+              </article>
+            ))}
+          </div>
+        ) : <p className="no-items-msg">{t('dashboard.emptyListings')}</p>}
+      </section>
+
+      <section className="dashboard-section">
+        <div className="dashboard-section-heading">
+          <h2>{t('dashboard.swaps')}</h2><span className="section-count">{activeSwaps.length}</span>
+        </div>
+        {activeSwaps.length ? activeSwaps.map(swap =>
+          <SwapCard key={swap._id} swap={swap} user={user} refresh={refreshData} />)
+          : <p className="no-items-msg">{t('dashboard.emptySwaps')}</p>}
+      </section>
+
+      {pastSwaps.length > 0 && (
+        <section className="dashboard-section">
+          <div className="dashboard-section-heading"><h2>{t('dashboard.history')}</h2></div>
+          {pastSwaps.map(swap => <SwapCard key={swap._id} swap={swap} user={user} refresh={refreshData} />)}
+        </section>
+      )}
+      {profile.isModerator && <ModeratorDisputes />}
+    </main>
+  )
+}

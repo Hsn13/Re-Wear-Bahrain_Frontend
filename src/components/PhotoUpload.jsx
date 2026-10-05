@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import api from '../services/api'
+import { useTranslation } from '../i18n'
 
 function CameraModal({ onCapture, onClose }) {
+  const { t } = useTranslation()
   const videoRef    = useRef(null)
   const canvasRef   = useRef(null)
   const streamRef   = useRef(null)
@@ -26,9 +28,9 @@ function CameraModal({ onCapture, onClose }) {
         videoRef.current.onloadedmetadata = () => setReady(true)
       }
     } catch {
-      setError('Could not access camera. Please allow camera permission or use "Choose File" instead.')
+      setError(t('photo.cameraError'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     let cancelled = false
@@ -50,7 +52,7 @@ function CameraModal({ onCapture, onClose }) {
         }
       } catch {
         if (!cancelled) {
-          setError('Could not access camera. Please allow camera permission or use "Choose File" instead.')
+          setError(t('photo.cameraError'))
         }
       }
     }
@@ -60,7 +62,7 @@ function CameraModal({ onCapture, onClose }) {
       cancelled = true
       streamRef.current?.getTracks().forEach(t => t.stop())
     }
-  }, [])
+  }, [t])
 
   function stopStream() {
     streamRef.current?.getTracks().forEach(t => t.stop())
@@ -87,7 +89,7 @@ function CameraModal({ onCapture, onClose }) {
     canvas.getContext('2d').drawImage(video, 0, 0)
     canvas.toBlob(blob => {
       stopStream()
-      onCapture(blob)
+      if (blob) onCapture(blob)
     }, 'image/jpeg', 0.92)
   }
 
@@ -95,14 +97,14 @@ function CameraModal({ onCapture, onClose }) {
     <div className="camera-modal-backdrop" onClick={handleClose}>
       <div className="camera-modal" onClick={e => e.stopPropagation()}>
         <div className="camera-modal-header">
-          <span className="camera-modal-title">Take a Photo</span>
-          <button className="camera-close-btn" onClick={handleClose} type="button">✕</button>
+          <span className="camera-modal-title">{t('photo.takePhoto')}</span>
+          <button className="camera-close-btn" onClick={handleClose} type="button" aria-label={t('photo.close')}>✕</button>
         </div>
 
         {error ? (
           <div className="camera-error">
             <p>{error}</p>
-            <button className="btn btn-ghost btn-sm" onClick={handleClose} type="button">Close</button>
+            <button className="btn btn-ghost btn-sm" onClick={handleClose} type="button">{t('photo.close')}</button>
           </div>
         ) : (
           <>
@@ -115,11 +117,11 @@ function CameraModal({ onCapture, onClose }) {
                 className="camera-video"
                 onLoadedMetadata={() => setReady(true)}
               />
-              {!ready && <div className="camera-loading">Starting camera…</div>}
+              {!ready && <div className="camera-loading">{t('photo.startingCamera')}</div>}
             </div>
             <canvas ref={canvasRef} style={{ display: 'none' }} />
             <div className="camera-controls">
-              <button className="camera-flip-btn" onClick={handleFlip} type="button" title="Flip camera">
+              <button className="camera-flip-btn" onClick={handleFlip} type="button" title={t('photo.flip')}>
                 🔄
               </button>
               <button
@@ -140,6 +142,7 @@ function CameraModal({ onCapture, onClose }) {
 }
 
 export default function PhotoUpload({ value, onChange }) {
+  const { t } = useTranslation()
   const fileInputRef        = useRef(null)
   const [showCamera, setShowCamera] = useState(false)
   const [uploading, setUploading]   = useState(false)
@@ -156,7 +159,7 @@ export default function PhotoUpload({ value, onChange }) {
       })
       onChange(res.data.url)
     } catch (err) {
-      setUploadError(err.response?.data?.err || 'Upload failed. Try again.')
+      setUploadError(err.response?.data?.err || t('photo.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -179,7 +182,7 @@ export default function PhotoUpload({ value, onChange }) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         style={{ display: 'none' }}
         onChange={handleFile}
       />
@@ -197,11 +200,11 @@ export default function PhotoUpload({ value, onChange }) {
           <div className="photo-preview-overlay">
             <button type="button" className="btn btn-ghost btn-sm photo-change-btn"
               onClick={() => fileInputRef.current.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : '✏️ Change'}
+              {uploading ? t('photo.uploading') : `✏️ ${t('photo.change')}`}
             </button>
             <button type="button" className="btn btn-danger btn-sm"
               onClick={() => onChange('')} disabled={uploading}>
-              🗑
+              {t('photo.remove')}
             </button>
           </div>
         </div>
@@ -210,23 +213,23 @@ export default function PhotoUpload({ value, onChange }) {
           {uploading ? (
             <div className="photo-upload-spinner">
               <div className="spinner" />
-              <p className="photo-upload-hint">Uploading photo…</p>
+              <p className="photo-upload-hint">{t('photo.uploading')}</p>
             </div>
           ) : (
             <>
               <div className="photo-upload-icon">📷</div>
-              <p className="photo-upload-title">Add a photo</p>
+              <p className="photo-upload-title">{t('photo.add')}</p>
               <div className="photo-upload-btns">
                 <button type="button" className="photo-src-btn"
                   onClick={() => setShowCamera(true)}>
-                  <span>📸</span> Camera
+                  <span>📸</span> {t('photo.camera')}
                 </button>
                 <button type="button" className="photo-src-btn"
                   onClick={() => fileInputRef.current.click()}>
-                  <span>🖼️</span> Gallery / File
+                  <span>🖼️</span> {t('photo.gallery')}
                 </button>
               </div>
-              <p className="photo-upload-hint">JPG, PNG, WEBP · max 8 MB</p>
+              <p className="photo-upload-hint">{t('photo.hint')}</p>
             </>
           )}
         </div>

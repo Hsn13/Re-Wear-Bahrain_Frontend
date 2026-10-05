@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import api from '../services/api'
-import { NEIGHBORHOOD_GROUPS } from '../constants/neighborhoods'
+import { NEIGHBORHOOD_GROUPS, localizedNeighborhood } from '../constants/neighborhoods'
+import { useTranslation } from '../i18n'
 
 const CATEGORIES = ['', 'tops', 'bottoms', 'dresses', 'outerwear', 'footwear', 'accessories', 'kids', 'other']
 const LIMIT = 12
@@ -20,6 +21,7 @@ function getPageNumbers(current, total) {
 }
 
 function Browse() {
+  const { t, language } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems]     = useState([])
   const [total, setTotal]     = useState(0)
@@ -45,12 +47,12 @@ function Browse() {
       const res = await api.get('/items', { params })
       setItems(res.data.items)
       setTotal(res.data.total)
-    } catch {
-      setError('Could not load items. Please try again.')
+    } catch (error) {
+      setError(error.response?.data?.err || t('browse.error'))
     } finally {
       setLoading(false)
     }
-  }, [filters, page])
+  }, [filters, page, t])
 
   useEffect(() => {
     fetchItems()
@@ -82,33 +84,40 @@ function Browse() {
 
   return (
     <div className="page-container browse-page">
-      <h1>Browse Items</h1>
+      <header className="browse-heading">
+        <div>
+          <span className="section-eyebrow">{t('browse.eyebrow')}</span>
+          <h1>{t('browse.title')}</h1>
+          <p>{t('browse.subtitle')}</p>
+        </div>
+        {!loading && <span className="browse-result-count">{t('browse.available', { count: total })}</span>}
+      </header>
 
       {/* ── Filters ── */}
       <div className="browse-filters">
         <div className="filter-group">
-          <label htmlFor="neighborhood">Area</label>
+          <label htmlFor="neighborhood">{t('browse.area')}</label>
           <select id="neighborhood" name="neighborhood"
             value={filters.neighborhood} onChange={handleFilter}>
-            <option value="">All areas</option>
+            <option value="">{t('browse.allAreas')}</option>
             {NEIGHBORHOOD_GROUPS.map(group => (
-              <optgroup key={group.label} label={group.label}>
+              <optgroup key={group.label} label={t(`governorate.${group.label.split(' ')[0].toLowerCase()}`)}>
                 {group.options.map(n => (
-                  <option key={n} value={n}>{n}</option>
+                  <option key={n} value={n}>{localizedNeighborhood(n, language)}</option>
                 ))}
               </optgroup>
             ))}
-            <option value="Other">Other</option>
+            <option value="Other">{localizedNeighborhood('Other', language)}</option>
           </select>
         </div>
 
         <div className="filter-group">
-          <label htmlFor="category">Category</label>
+          <label htmlFor="category">{t('browse.category')}</label>
           <select id="category" name="category"
             value={filters.category} onChange={handleFilter}>
             {CATEGORIES.map(c => (
               <option key={c} value={c}>
-                {c ? c.charAt(0).toUpperCase() + c.slice(1) : 'All categories'}
+                {c ? t(`category.${c}`) : t('browse.allCategories')}
               </option>
             ))}
           </select>
@@ -116,27 +125,25 @@ function Browse() {
 
         {hasFilters && (
           <button className="btn btn-ghost btn-sm" onClick={clearFilters}>
-            Clear filters
+            {t('browse.clear')}
           </button>
         )}
 
         {!loading && (
           <span className="filter-results">
-            {total === 0 ? 'No items' : `${total} available`}
+            {total}
           </span>
         )}
       </div>
 
       {/* ── States ── */}
-      {loading && <p className="loading-msg">Loading items…</p>}
+      {loading && <p className="loading-msg" role="status">{t('browse.loading')}</p>}
       {error   && <p className="error-msg">{error}</p>}
 
       {!loading && items.length === 0 && !error && (
         <div className="empty-state">
-          <div className="empty-state-icon">👗</div>
-          <p>No items found. Try a different filter or{' '}
-            <Link to="/items/new">list one yourself!</Link>
-          </p>
+          <div className="empty-state-icon" aria-hidden="true">◌</div>
+          <p>{t('browse.none')} <Link to="/items/new">{t('nav.list')}</Link></p>
         </div>
       )}
 
@@ -145,25 +152,26 @@ function Browse() {
         {items.map(item => (
           <Link key={item._id} to={`/items/${item._id}`} className="item-card">
             {item.images?.[0]
-              ? <img src={item.images[0]} alt={item.title} className="item-card-img" />
+              ? <img src={item.images[0]} alt={item.title} className="item-card-img" loading="lazy" />
               : (
                 <div className="item-card-placeholder">
-                  <span>👗</span>
-                  <span>No photo</span>
+                  <span aria-hidden="true">◌</span>
+                  <span>{t('item.noPhoto')}</span>
                 </div>
               )
             }
             <div className="item-card-body">
               <p className="item-card-title">{item.title}</p>
               <p className="item-card-meta">
-                {item.category} · {item.size || '—'} · {item.condition}
+                {t(`category.${item.category}`)} · {item.size || '—'} · {t(`condition.${item.condition}`)}
               </p>
               <div className="item-card-footer">
                 <span className="item-card-location">
-                  📍 {item.location?.customNeighborhood || item.location?.neighborhood}
+                  {localizedNeighborhood(item.location?.customNeighborhood || item.location?.neighborhood, language)}
                 </span>
-                <span className="item-card-credits">🌿 {item.ecoCreditsPrice}</span>
+                <span className="item-card-credits">◈ {t('item.credits', { count: item.ecoCreditsPrice })}</span>
               </div>
+              {(item.isDemo || item.owner?.isDemo) && <span className="demo-listing-badge">{t('browse.demo')}</span>}
             </div>
           </Link>
         ))}
@@ -173,12 +181,12 @@ function Browse() {
       {!loading && totalPages > 1 && (
         <div className="pagination">
           <p className="pagination-info">
-            Showing {from}–{to} of {total} items
+            {from}–{to} / {total}
           </p>
           <div className="pagination-controls">
             <button className="page-btn page-btn-nav"
               onClick={() => goToPage(page - 1)} disabled={page === 1}>
-              ← Prev
+              {t('browse.previous')}
             </button>
 
             {getPageNumbers(page, totalPages).map((p, i) =>
@@ -197,7 +205,7 @@ function Browse() {
 
             <button className="page-btn page-btn-nav"
               onClick={() => goToPage(page + 1)} disabled={page === totalPages}>
-              Next →
+              {t('browse.next')}
             </button>
           </div>
         </div>

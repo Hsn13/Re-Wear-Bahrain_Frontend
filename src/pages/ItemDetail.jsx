@@ -1,153 +1,144 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { useNavigate, useParams, Link } from 'react-router'
 import api from '../services/api'
-import Map from '../components/Map'
 import BackButton from '../components/BackButton'
+import { localizedNeighborhood } from '../constants/neighborhoods'
+import { useTranslation } from '../i18n'
 
-const CONDITION_LABEL = { 'new': 'New', 'like-new': 'Like New', 'good': 'Good', 'fair': 'Fair' }
+const Map = lazy(() => import('../components/Map'))
 
 function ItemDetail({ user }) {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t, language } = useTranslation()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [requesting, setRequesting] = useState(false)
-  const [requestSuccess, setRequestSuccess] = useState(false)
   const [pickupNotes, setPickupNotes] = useState('')
 
   useEffect(() => {
+    setLoading(true)
     api.get(`/items/${id}`)
-      .then(res => setItem(res.data.item))
-      .catch(() => setError('Item not found'))
+      .then(response => setItem(response.data.item))
+      .catch(error => setError(error.response?.data?.err || t('browse.error')))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
-  async function handleRequest(e) {
-    e.preventDefault()
-    setRequesting(true)
+  async function handleRequest(event) {
+    event.preventDefault()
     setError('')
+    setRequesting(true)
     try {
       await api.post('/swaps', { itemId: id, pickupNotes })
-      setRequestSuccess(true)
-      setItem(prev => ({ ...prev, status: 'pending' }))
-    } catch (err) {
-      setError(err.response?.data?.err || 'Could not submit request')
+      navigate('/dashboard')
+    } catch (error) {
+      setError(error.response?.data?.err || t('auth.error'))
     } finally {
       setRequesting(false)
     }
   }
 
   async function handleDelete() {
-    if (!window.confirm('Delete this listing?')) return
+    if (!window.confirm(t('item.deleteConfirm'))) return
+    setError('')
     try {
       await api.delete(`/items/${id}`)
       navigate('/dashboard')
-    } catch (err) {
-      setError(err.response?.data?.err || 'Could not delete item')
+    } catch (error) {
+      setError(error.response?.data?.err || t('auth.error'))
     }
   }
 
-  if (loading) return <p className="loading-msg">Loading...</p>
-  if (error && !item) return <p className="error-msg" style={{ margin: '2rem auto', maxWidth: 600 }}>{error}</p>
+  if (loading) return <p className="loading-msg page-feedback">{t('status.loading')}</p>
+  if (error && !item) return <p className="error-msg page-feedback" role="alert">{error}</p>
   if (!item) return null
 
-  const isOwner    = user && item.owner._id === user._id
-  const canRequest = user && !isOwner && item.status === 'available'
-  const statusClass = `item-status-badge status-${item.status}`
+  const isOwner = Boolean(user && item.owner?._id === user._id)
+  const isDemo = Boolean(item.isDemo || item.owner?.isDemo)
+  const canRequest = Boolean(user && !isOwner && item.status === 'available' && !isDemo)
+  const privatePickup = item.pickupLocation
+  const pickupCoordinates = privatePickup?.coordinates || item.location?.coordinates
+  const pickupLabel = privatePickup
+    ? `${t('item.exactPickup')} · ${privatePickup.address}`
+    : t('item.pickupArea')
 
   return (
-    <div className="page-container item-detail">
+    <main className="page-container item-detail">
       <BackButton fallback="/browse" />
-
-      {item.images?.[0] && (
-        <img src={item.images[0]} alt={item.title} className="item-detail-img" />
-      )}
-
-      <div className="item-detail-header">
-        <h1>{item.title}</h1>
-        <div className="item-pills">
-          <span className="pill pill-neutral">{item.category}</span>
-          {item.size && <span className="pill pill-neutral">Size {item.size}</span>}
-          <span className="pill pill-neutral">{CONDITION_LABEL[item.condition]}</span>
-          <span className="pill pill-green">📍 {item.location?.neighborhood}</span>
+      <article className="item-detail-card">
+        <div className="item-detail-media">
+          {item.images?.[0]
+            ? <img src={item.images[0]} alt={item.title} className="item-detail-img" />
+            : <div className="item-detail-placeholder" aria-hidden="true">◌</div>}
+          {(isDemo || item.owner?.isDemo) && <span className="demo-listing-badge">{t('browse.demo')}</span>}
         </div>
-      </div>
 
-      <div className="item-credits-banner">
-        <span className="credits-number">🌿 {item.ecoCreditsPrice}</span>
-        <span className="credits-label">Eco-Credits to claim this item</span>
-      </div>
-
-      {item.description && <p className="item-description">{item.description}</p>}
-
-      <p className="item-owner-line">
-        Listed by <strong>{item.owner?.username}</strong> · {item.owner?.location?.neighborhood}
-      </p>
-
-      <span className={statusClass}>{item.status}</span>
-
-      {/* Map showing approximate pickup area */}
-      <Map
-        coordinates={item.location?.coordinates}
-        label={item.location?.neighborhood}
-      />
-
-      {error && <p className="error-msg">{error}</p>}
-
-      {requestSuccess && (
-        <p className="success-msg">
-          Request sent! The owner will see your message and respond.{' '}
-          Check your <Link to="/dashboard">Dashboard</Link> for updates.
-        </p>
-      )}
-
-      {canRequest && !requestSuccess && (
-        <div className="request-form">
-          <h3>Request this item</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-            Your message will be visible to the owner so they can coordinate pickup with you.
-          </p>
-          <form onSubmit={handleRequest}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="pickupNotes">
-                Message to owner
-              </label>
-              <textarea
-                className="form-textarea"
-                id="pickupNotes"
-                rows={3}
-                value={pickupNotes}
-                onChange={e => setPickupNotes(e.target.value)}
-                placeholder="e.g. I'm free on weekends and can meet near Juffair…"
-                maxLength={500}
-              />
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={requesting}>
-              {requesting ? 'Sending…' : `Request Item · costs ${item.ecoCreditsPrice} credits`}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {!user && item.status === 'available' && (
-        <p className="success-msg" style={{ marginTop: '1.5rem' }}>
-          <Link to="/sign-in">Sign in</Link> to request this item.
-        </p>
-      )}
-
-      {isOwner && (
-        <div className="owner-actions">
-          <span className="owner-label">This is your listing</span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {item.status === 'available' && (
-              <Link className="btn btn-ghost btn-sm" to={`/items/${id}/edit`}>Edit</Link>
-            )}
-            <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+        <div className="item-detail-content">
+          <div className="item-detail-topline">
+            <span className={`item-status-badge status-${item.status}`}>{t(`item.status.${item.status}`)}</span>
+            <span className="item-detail-location">
+              {localizedNeighborhood(item.location?.neighborhood, language)}
+            </span>
           </div>
+          <h1>{item.title}</h1>
+          <div className="item-pills">
+            <span className="pill pill-neutral">{t(`category.${item.category}`)}</span>
+            {item.size && <span className="pill pill-neutral">{t('item.size')} {item.size}</span>}
+            <span className="pill pill-neutral">{t(`condition.${item.condition}`)}</span>
+          </div>
+          <div className="item-credits-banner">
+            <span className="credits-number">◈ {item.ecoCreditsPrice}</span>
+            <span className="credits-label">{t('list.credits')}</span>
+          </div>
+          {item.description && <p className="item-description">{item.description}</p>}
+          <p className="item-owner-line">{t('item.owner', { name: item.owner?.username || t('item.member') })}</p>
+
+          {isDemo && <p className="demo-notice">{t('item.demoNotice')}</p>}
+          {pickupCoordinates && (
+            <Suspense fallback={<p className="loading-msg">{t('status.loading')}</p>}>
+              <Map coordinates={pickupCoordinates} label={pickupLabel} />
+            </Suspense>
+          )}
+          {!privatePickup && <p className="privacy-note">{t('item.privateUntilApproval')}</p>}
+
+          {error && <p className="error-msg" role="alert">{error}</p>}
+          {canRequest && (
+            <section className="request-form">
+              <h2>{t('item.request')}</h2>
+              <p className="form-hint">{t('item.requestHint')}</p>
+              <form onSubmit={handleRequest}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="pickupNotes">{t('item.message')}</label>
+                  <textarea id="pickupNotes" className="form-textarea" rows={3} minLength={10}
+                    maxLength={500} value={pickupNotes} onChange={event => setPickupNotes(event.target.value)}
+                    placeholder={t('item.messagePlaceholder')} required />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={requesting || pickupNotes.trim().length < 10}>
+                  {requesting ? t('item.requesting') : t('item.requestButton', { count: item.ecoCreditsPrice })}
+                </button>
+              </form>
+            </section>
+          )}
+
+          {!user && item.status === 'available' && !isDemo && (
+            <p className="privacy-note"><Link to="/sign-in">{t('item.signinToRequest')}</Link></p>
+          )}
+          {user && !isOwner && item.status === 'available' && !user.phoneVerifiedAt && (
+            <p className="privacy-note">{t('dashboard.phoneRequired')} <Link to="/dashboard">{t('dashboard.verifyPhone')}</Link></p>
+          )}
+          {isOwner && (
+            <div className="owner-actions">
+              <span className="owner-label">{t('item.yourListing')}</span>
+              <div className="owner-action-buttons">
+                {item.status === 'available' && <Link className="btn btn-secondary btn-sm" to={`/items/${id}/edit`}>{t('item.edit')}</Link>}
+                {item.status === 'available' && <button className="btn btn-ghost btn-sm" onClick={handleDelete}>{t('item.delete')}</button>}
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </article>
+    </main>
   )
 }
 

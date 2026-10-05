@@ -11,6 +11,7 @@ import ItemDetail from './pages/ItemDetail';
 import NewItem from './pages/NewItem';
 import AboutUs from './pages/AboutUs';
 import EditItem from './pages/EditItem';
+import CommunityGuidelines from './pages/CommunityGuidelines';
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -38,6 +39,7 @@ function App() {
           <Route path="/" element={<Homepage />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/about" element={<AboutUs />} />
+          <Route path="/guidelines" element={<CommunityGuidelines />} />
           <Route path="/items/new" element={user ? <NewItem /> : <Navigate to="/sign-in" />} />
           <Route path="/items/:id/edit" element={user ? <EditItem /> : <Navigate to="/sign-in" />} />
           <Route path="/items/:id" element={<ItemDetail user={user} />} />

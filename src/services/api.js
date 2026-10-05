@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+  baseURL: import.meta.env.VITE_BACKEND_URL ||
+    (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin)
 })
 
 api.interceptors.request.use(config => {
