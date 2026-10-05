@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import api from '../services/api'
 import { NEIGHBORHOOD_GROUPS } from '../constants/neighborhoods'
@@ -35,11 +35,7 @@ function Browse() {
   const from = total === 0 ? 0 : (page - 1) * LIMIT + 1
   const to   = Math.min(page * LIMIT, total)
 
-  useEffect(() => {
-    fetchItems()
-  }, [filters, page])
-
-  async function fetchItems() {
+  const fetchItems = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -54,7 +50,11 @@ function Browse() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, page])
+
+  useEffect(() => {
+    fetchItems()
+  }, [fetchItems])
 
   function handleFilter(e) {
     const { name, value } = e.target

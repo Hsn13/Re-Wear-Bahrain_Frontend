@@ -31,8 +31,35 @@ function CameraModal({ onCapture, onClose }) {
   }, [])
 
   useEffect(() => {
-    startCamera(false)
-    return () => streamRef.current?.getTracks().forEach(t => t.stop())
+    let cancelled = false
+
+    async function initializeCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+          audio: false,
+        })
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop())
+          return
+        }
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.onloadedmetadata = () => setReady(true)
+        }
+      } catch {
+        if (!cancelled) {
+          setError('Could not access camera. Please allow camera permission or use "Choose File" instead.')
+        }
+      }
+    }
+
+    initializeCamera()
+    return () => {
+      cancelled = true
+      streamRef.current?.getTracks().forEach(t => t.stop())
+    }
   }, [])
 
   function stopStream() {

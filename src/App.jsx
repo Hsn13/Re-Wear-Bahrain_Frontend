@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import Homepage from './pages/Homepage';
 import SignUp from './pages/Signup';
@@ -13,20 +13,18 @@ import AboutUs from './pages/AboutUs';
 import EditItem from './pages/EditItem';
 
 function App() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const userInfo = JSON.parse(atob(token.split('.')[1])).payload;
-        setUser(userInfo);
-      } catch (err) {
-        console.error('Invalid token:', err);
-        localStorage.removeItem('token');
-      }
+    if (!token) return null;
+
+    try {
+      return JSON.parse(atob(token.split('.')[1])).payload;
+    } catch (err) {
+      console.error('Invalid token:', err);
+      localStorage.removeItem('token');
+      return null;
     }
-  }, []);
+  });
 
   function handleUserUpdate(updates) {
     setUser(prev => ({ ...prev, ...updates }))
