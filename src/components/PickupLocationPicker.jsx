@@ -13,18 +13,28 @@ function PinSelector({ coordinates, onChange }) {
     }
   })
 
-  return coordinates ? <Marker position={[coordinates[1], coordinates[0]]} /> : null
+  return isValidCoordinates(coordinates)
+    ? <Marker position={[Number(coordinates[1]), Number(coordinates[0])]} />
+    : null
+}
+
+function isValidCoordinates(coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) return false
+  const [longitude, latitude] = coordinates.map(Number)
+  return Number.isFinite(longitude) && Number.isFinite(latitude) &&
+    longitude >= 50.2 && longitude <= 50.9 && latitude >= 25.5 && latitude <= 26.5
 }
 
 export default function PickupLocationPicker({ coordinates, onChange }) {
   const { t } = useTranslation()
-  const center = coordinates
+  const hasValidCoordinates = isValidCoordinates(coordinates)
+  const center = hasValidCoordinates
     ? [Number(coordinates[1]), Number(coordinates[0])]
     : BAHRAIN_CENTER
 
   return (
     <div className="pickup-map">
-      <MapContainer center={center} zoom={coordinates ? 15 : 10} scrollWheelZoom={false}>
+      <MapContainer center={center} zoom={hasValidCoordinates ? 15 : 10} scrollWheelZoom={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

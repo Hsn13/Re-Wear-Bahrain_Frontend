@@ -15,6 +15,12 @@ export default function EditItem() {
     api.get(`/items/${id}`)
       .then(response => {
         const item = response.data.item
+        const pickupCoordinates = item.pickupLocation?.coordinates
+        const hasValidPickupCoordinates = Array.isArray(pickupCoordinates) &&
+          pickupCoordinates.length === 2 &&
+          pickupCoordinates.every(value => Number.isFinite(Number(value))) &&
+          Number(pickupCoordinates[0]) >= 50.2 && Number(pickupCoordinates[0]) <= 50.9 &&
+          Number(pickupCoordinates[1]) >= 25.5 && Number(pickupCoordinates[1]) <= 26.5
         setItemData({
           title: item.title || '',
           description: item.description || '',
@@ -26,7 +32,7 @@ export default function EditItem() {
           pickupType: item.pickupLocation?.type || 'public',
           pickupAddress: item.pickupLocation?.address || '',
           pickupInstructions: item.pickupLocation?.instructions || '',
-          pickupCoordinates: item.pickupLocation?.coordinates || null
+          pickupCoordinates: hasValidPickupCoordinates ? pickupCoordinates : null
         })
       })
       .catch(() => setError(t('auth.error')))
