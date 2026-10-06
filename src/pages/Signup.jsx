@@ -8,15 +8,11 @@ import { useTranslation } from '../i18n'
 function Signup() {
   const { t, language } = useTranslation()
   const [formData, setFormData] = useState({
-    username: '', password: '', neighborhood: '', customNeighborhood: '',
-    phoneNumber: '', code: '', phoneProof: ''
+    username: '', password: '', neighborhood: '', customNeighborhood: ''
   })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [sendingCode, setSendingCode] = useState(false)
-  const [verifyingCode, setVerifyingCode] = useState(false)
-  const [codeSent, setCodeSent] = useState(false)
   const [adultConfirmed, setAdultConfirmed] = useState(false)
   const [created, setCreated] = useState(false)
   const navigate = useNavigate()
@@ -60,7 +56,7 @@ function Signup() {
   async function handleSubmit(e) {
     e.preventDefault()
     setServerError('')
-    if (!validateAll() || !formData.phoneProof || !adultConfirmed) return
+    if (!validateAll() || !adultConfirmed) return
     setSubmitting(true)
     try {
       await api.post('/auth/sign-up', {
@@ -68,7 +64,6 @@ function Signup() {
         password: formData.password,
         neighborhood: formData.neighborhood,
         customNeighborhood: formData.neighborhood === 'Other' ? formData.customNeighborhood.trim() : undefined,
-        phoneProof: formData.phoneProof,
         adultConfirmed
       })
       setCreated(true)
@@ -76,35 +71,6 @@ function Signup() {
       setServerError(err.response?.data?.err || t('auth.error'))
     } finally {
       setSubmitting(false)
-    }
-  }
-
-  async function sendCode() {
-    setServerError('')
-    setSendingCode(true)
-    try {
-      await api.post('/auth/phone/send-code', { phoneNumber: formData.phoneNumber })
-      setCodeSent(true)
-    } catch (err) {
-      setServerError(err.response?.data?.err || t('auth.error'))
-    } finally {
-      setSendingCode(false)
-    }
-  }
-
-  async function verifyCode() {
-    setServerError('')
-    setVerifyingCode(true)
-    try {
-      const response = await api.post('/auth/phone/verify-code', {
-        phoneNumber: formData.phoneNumber,
-        code: formData.code
-      })
-      setFormData(previous => ({ ...previous, phoneProof: response.data.phoneProof }))
-    } catch (err) {
-      setServerError(err.response?.data?.err || t('auth.error'))
-    } finally {
-      setVerifyingCode(false)
     }
   }
 
@@ -157,36 +123,6 @@ function Signup() {
             {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
 
-          <div className="phone-verification">
-            <div className="form-group">
-              <label className="form-label" htmlFor="phoneNumber">{t('auth.phone')}</label>
-              <input className="form-input" id="phoneNumber" name="phoneNumber" type="tel"
-                autoComplete="tel" inputMode="tel" dir="ltr" placeholder="+973 3XXX XXXX"
-                value={formData.phoneNumber} onChange={handleChange} disabled={Boolean(formData.phoneProof)} required />
-              <span className="form-hint">{t('auth.phoneHint')}</span>
-            </div>
-            {!formData.phoneProof && (
-              <button type="button" className="btn btn-secondary btn-full" onClick={sendCode}
-                disabled={sendingCode || !formData.phoneNumber}>
-                {sendingCode ? t('auth.sendingCode') : t('auth.sendCode')}
-              </button>
-            )}
-            {codeSent && !formData.phoneProof && (
-              <div className="verification-code-row">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="code">{t('auth.code')}</label>
-                  <input className="form-input" id="code" name="code" inputMode="numeric" autoComplete="one-time-code"
-                    dir="ltr" value={formData.code} onChange={handleChange} required />
-                </div>
-                <button type="button" className="btn btn-primary" onClick={verifyCode}
-                  disabled={verifyingCode || !formData.code}>
-                  {verifyingCode ? t('auth.verifying') : t('auth.verifyCode')}
-                </button>
-              </div>
-            )}
-            {formData.phoneProof && <p className="verified-note">✓ {t('auth.phoneVerified')}</p>}
-          </div>
-
           <div className="form-group">
             <label className="form-label" htmlFor="neighborhood">{t('auth.neighborhood')}</label>
             <select
@@ -232,7 +168,7 @@ function Signup() {
 
           <button
             className="btn btn-primary btn-full" type="submit"
-            disabled={submitting || !formData.phoneProof || !adultConfirmed}
+            disabled={submitting || !adultConfirmed}
           >
             {submitting ? t('auth.creating') : t('auth.create')}
           </button>

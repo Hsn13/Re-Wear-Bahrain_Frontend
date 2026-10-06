@@ -56,7 +56,7 @@ function ItemDetail({ user }) {
 
   const isOwner = Boolean(user && item.owner?._id === user._id)
   const isDemo = Boolean(item.isDemo || item.owner?.isDemo)
-  const canRequest = Boolean(user && !isOwner && item.status === 'available' && !isDemo)
+  const canRequest = Boolean(user && user.adultConfirmedAt && !isOwner && item.status === 'available' && !isDemo)
   const privatePickup = item.pickupLocation
   const pickupCoordinates = privatePickup?.coordinates || item.location?.coordinates
   const pickupLabel = privatePickup
@@ -124,8 +124,8 @@ function ItemDetail({ user }) {
           {!user && item.status === 'available' && !isDemo && (
             <p className="privacy-note"><Link to="/sign-in">{t('item.signinToRequest')}</Link></p>
           )}
-          {user && !isOwner && item.status === 'available' && !user.phoneVerifiedAt && (
-            <p className="privacy-note">{t('dashboard.phoneRequired')} <Link to="/dashboard">{t('dashboard.verifyPhone')}</Link></p>
+          {user && !isOwner && item.status === 'available' && !user.adultConfirmedAt && (
+            <p className="privacy-note">{t('dashboard.adultRequired')} <Link to="/dashboard">{t('dashboard.confirmAge')}</Link></p>
           )}
           {isOwner && (
             <div className="owner-actions">

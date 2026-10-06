@@ -17,7 +17,7 @@ Development defaults to `http://localhost:3000`; production defaults to the fron
 VITE_BACKEND_URL=http://localhost:3000
 ```
 
-The API must also allow the frontend origin through its `CLIENT_ORIGINS` setting. Phone verification requires the backend’s Twilio Verify configuration. See the backend README for deployment variables and setup.
+The API must also allow the frontend origin through its `CLIENT_ORIGINS` setting. Signup uses an adult self-attestation and does not require paid phone verification. See the backend README for deployment variables and setup.
 
 ## Product flows
 
