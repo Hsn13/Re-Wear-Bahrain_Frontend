@@ -1,4 +1,4 @@
-# Re-Wear Bahrain — Frontend
+# Re-Wear Bahrain — Frontend           [![Netlify Status](https://api.netlify.com/api/v1/badges/269a7e1a-06f5-4666-a3a0-165cdf9f95de/deploy-status)](https://app.netlify.com/projects/rewearbh/deploys)
 
 A bilingual (English/Arabic) community fashion exchange for Bahrain. People discover and share clothing, coordinate a real handover, and exchange non-cash Eco-Credits after both sides confirm completion.
 
